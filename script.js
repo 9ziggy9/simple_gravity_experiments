@@ -10,6 +10,8 @@ const colorArray = ['black', 'white', 'blue',
 let colorNum = 0;
 let MOUSE_DOWN = false;
 let RUN = true;
+let MENU = false;
+let PAUSE = false;
 
 const mouse = {
     x: undefined,
@@ -31,7 +33,14 @@ const velVector = {
 
 // PAUSE
 window.addEventListener('keypress', event => {
-    if (event.code === 'Space') RUN?RUN=false:RUN=true;
+    if (event.code === 'Space' && !MENU) {
+        RUN ? RUN = false : RUN = true;
+        PAUSE ? PAUSE = false : PAUSE = true;
+    }
+    if (event.key === 'q' && !PAUSE) {
+        RUN ? RUN = false : RUN = true;
+        MENU ? MENU = false : MENU = true;
+    }
 });
 
 window.addEventListener('click', event => {
@@ -59,7 +68,7 @@ window.addEventListener('mousemove', event => {
     velVector.y_1 = event.y;
 });
 window.addEventListener('mouseup', event => {
-    if (event.button === 0) {
+    if (event.button === 0 && !MENU) {
         console.log('let go');
         MOUSE_DOWN = false;
         colorNum++;
@@ -83,9 +92,11 @@ window.addEventListener('mouseup', event => {
 // BLOW SHIT UP /////////////////////////////////////////////////////////////
 window.addEventListener('contextmenu', event => {
     event.preventDefault();
-    splodeHere.x = event.x;
-    splodeHere.y = event.y;
-    console.log(`BABOOM @ (${splodeHere.x}, ${splodeHere.y})`);
+    if (!MENU) {
+        splodeHere.x = event.x;
+        splodeHere.y = event.y;
+        console.log(`BABOOM @ (${splodeHere.x}, ${splodeHere.y})`);
+    }
 });
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -153,6 +164,26 @@ function fuckingSplode(x,y,rad) {
     ctx.fill();
 }
 
+function handleExplosion(x,y,arr,p) {
+    fuckingSplode(x, y, 200);
+    arr.splice(p,1);
+    arr.forEach(particle => {
+        let d_vec = {x: particle.x - splodeHere.x,
+                     y: particle.y - splodeHere.y};
+        let R_squared = Math.pow(d_vec.x,2)+Math.pow(d_vec.y,2);
+        d_vec.x = d_vec.x / R_squared;
+        d_vec.y = d_vec.y / R_squared;
+        particle.v_x += 1000 * d_vec.x;
+        particle.v_y += 1000 * d_vec.y;
+    });
+    splodeHere.x = undefined;
+    splodeHere.y = undefined;
+    if(!RUN) {
+        RUN = true;
+        PAUSE = false;
+    }
+}
+
 function animate() {
     // CLEARING SCREEN
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -174,26 +205,9 @@ function animate() {
         // Fuckin' splode
         const splodeRadius = Math.sqrt(Math.pow((splodeHere.x - x),2) +
                                        Math.pow((splodeHere.y - y),2));
-        if (splodeRadius < radius) {
-            fuckingSplode(x, y, 200);
-            particleArray.splice(i,1);
-            particleArray.forEach(particle => {
-                let d_vec = {x: particle.x - splodeHere.x,
-                             y: particle.y - splodeHere.y};
-                let R_squared = Math.pow(d_vec.x,2)+Math.pow(d_vec.y,2);
-                d_vec.x = d_vec.x / R_squared;
-                d_vec.y = d_vec.y / R_squared;
-                particle.v_x += 1000 * d_vec.x;
-                particle.v_y += 1000 * d_vec.y;
-            });
-            splodeHere.x = undefined;
-            splodeHere.y = undefined;
-            if(!RUN) RUN = true;
-        }
+        if (splodeRadius < radius) handleExplosion(x,y,particleArray,i);
     }
-
-    splodeHere.x = undefined;
-    splodeHere.y = undefined;
+    splodeHere.x = splodeHere.y = undefined;
 
     // AIMING ARROW
     if (MOUSE_DOWN) {
@@ -203,6 +217,14 @@ function animate() {
         ctx.lineTo(velVector.x_1, velVector.y_1);
         ctx.stroke();
     }
+
+    // MENU
+    if (MENU) {
+        ctx.fillStyle = 'gray';
+        ctx.fillRect(canvas.width/4, canvas.height/4,
+                 canvas.width/2, canvas.height/2);
+    }
+
    // NEXT FRAME
    requestAnimationFrame(animate);
 }
