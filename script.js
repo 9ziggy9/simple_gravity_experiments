@@ -13,15 +13,19 @@ let MOUSE_DOWN = false;
 const mouse = {
     x: undefined,
     y: undefined,
-    radius: 150
+};
+
+const splodeHere = {
+    x: undefined,
+    y: undefined,
 };
 
 const velVector = {
-    x_0: null,
-    y_0: null,
-    x_1: null,
-    y_1: null,
-    mag: null
+    x_0: undefined,
+    y_0: undefined,
+    x_1: undefined,
+    y_1: undefined,
+    mag: undefined
 };
 
 window.addEventListener('click', event => {
@@ -65,7 +69,7 @@ window.addEventListener('mouseup', event => {
                                         (velVector.y_1 - velVector.y_0) / 5));
         console.log(velVector.mag);
         for (let key in velVector)
-            velVector[key] = null;
+            velVector[key] = undefined;
         console.log(velVector);
     }
 });
@@ -73,12 +77,14 @@ window.addEventListener('mouseup', event => {
 // BLOW SHIT UP /////////////////////////////////////////////////////////////
 window.addEventListener('contextmenu', event => {
     event.preventDefault();
-    console.log('BABOOM');
+    splodeHere.x = event.x;
+    splodeHere.y = event.y;
+    console.log(`BABOOM @ (${splodeHere.x}, ${splodeHere.y})`);
 });
 ///////////////////////////////////////////////////////////////////////////////
 
 class Particle {
-    constructor(x, y, radius, color, gravity, COR, v_x=2, v_y=2) {
+    constructor(x, y, radius, color, gravity, COR, v_x=0, v_y=0) {
         this.v_x = v_x;
         this.v_y = v_y;
         this.dVel = gravity * 0.1;
@@ -134,21 +140,41 @@ class Particle {
     }
 }
 
+function fuckingSplode(x,y,rad) {
+    ctx.beginPath();
+    ctx.arc(x, y, rad, 0, Math.PI * 2, false);
+    ctx.fillStyle = 'black';
+    ctx.fill();
+}
+
 function animate() {
     // CLEARING SCREEN
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // DRAWING PARTICLES
     for (let i = 0; i < particleArray.length; i++) {
+        let {x, y, radius} = particleArray[i];
         particleArray[i].inelasticFall();
         particleArray[i].fire();
         particleArray[i].draw();
         // Clean up
-        if (particleArray[i].x > canvas.width + particleArray[i].radius ||
-            particleArray[i].x < -particleArray[i].radius) {
+        if (x > canvas.width + radius || x < -radius) {
             particleArray.splice(i, 1);
             console.log(`particle ${i} removed`);
             console.log(particleArray);
+        }
+        // Fuckin' splode
+        const splodeRadius = Math.sqrt(Math.pow((splodeHere.x - x),2) +
+                                       Math.pow((splodeHere.y - y), 2));
+        if (splodeRadius < radius) {
+            fuckingSplode(x, y, 200);
+            particleArray.splice(i,1);
+            particleArray.forEach(particle => {
+                particle.v_x += 0.5 * (particle.x - splodeHere.x);
+                particle.v_y += 15;
+            });
+            splodeHere.x = undefined;
+            splodeHere.y = undefined;
         }
     }
 
