@@ -170,8 +170,12 @@ function animate() {
             fuckingSplode(x, y, 200);
             particleArray.splice(i,1);
             particleArray.forEach(particle => {
-                particle.v_x += 0.5 * (particle.x - splodeHere.x);
-                particle.v_y += 15;
+                let R = Math.sqrt(Math.pow((splodeHere.x - particle.x),2) +
+                                  Math.pow((splodeHere.y - particle.y),2));
+                particle.v_x += 500 *(particle.x - splodeHere.x) /
+                    Math.pow(R,2);
+                particle.v_y += 500 *(particle.x - splodeHere.x) /
+                    Math.pow(R,2);
             });
             splodeHere.x = undefined;
             splodeHere.y = undefined;
