@@ -9,6 +9,7 @@ const colorArray = ['black', 'white', 'blue',
 ];
 let colorNum = 0;
 let MOUSE_DOWN = false;
+let RUN = true;
 
 const mouse = {
     x: undefined,
@@ -27,6 +28,11 @@ const velVector = {
     y_1: undefined,
     mag: undefined
 };
+
+// PAUSE
+window.addEventListener('keypress', event => {
+    if (event.code === 'Space') RUN?RUN=false:RUN=true;
+});
 
 window.addEventListener('click', event => {
     console.log('generating particle');
@@ -154,8 +160,10 @@ function animate() {
     // DRAWING PARTICLES
     for (let i = 0; i < particleArray.length; i++) {
         let {x, y, radius} = particleArray[i];
-        particleArray[i].inelasticFall();
-        particleArray[i].fire();
+        if (RUN) {
+            particleArray[i].inelasticFall();
+            particleArray[i].fire();
+        }
         particleArray[i].draw();
         // Clean up
         if (x > canvas.width + radius || x < -radius) {
@@ -165,22 +173,27 @@ function animate() {
         }
         // Fuckin' splode
         const splodeRadius = Math.sqrt(Math.pow((splodeHere.x - x),2) +
-                                       Math.pow((splodeHere.y - y), 2));
+                                       Math.pow((splodeHere.y - y),2));
         if (splodeRadius < radius) {
             fuckingSplode(x, y, 200);
             particleArray.splice(i,1);
             particleArray.forEach(particle => {
-                let R = Math.sqrt(Math.pow((splodeHere.x - particle.x),2) +
-                                  Math.pow((splodeHere.y - particle.y),2));
-                particle.v_x += 500 *(particle.x - splodeHere.x) /
-                    Math.pow(R,2);
-                particle.v_y += 500 *(particle.x - splodeHere.x) /
-                    Math.pow(R,2);
+                let d_vec = {x: particle.x - splodeHere.x,
+                             y: particle.y - splodeHere.y};
+                let R_squared = Math.pow(d_vec.x,2)+Math.pow(d_vec.y,2);
+                d_vec.x = d_vec.x / R_squared;
+                d_vec.y = d_vec.y / R_squared;
+                particle.v_x += 1000 * d_vec.x;
+                particle.v_y += 1000 * d_vec.y;
             });
             splodeHere.x = undefined;
             splodeHere.y = undefined;
+            if(!RUN) RUN = true;
         }
     }
+
+    splodeHere.x = undefined;
+    splodeHere.y = undefined;
 
     // AIMING ARROW
     if (MOUSE_DOWN) {
@@ -191,7 +204,7 @@ function animate() {
         ctx.stroke();
     }
    // NEXT FRAME
-    requestAnimationFrame(animate);
+   requestAnimationFrame(animate);
 }
 
 animate();
